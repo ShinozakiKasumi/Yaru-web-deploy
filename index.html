@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="/">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Yaru - Online Learning Operating System / 在线学习操作系统">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Yaru">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png" />
+
+  <title>Yaru</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    (function () {
+      let localeFromStorage = '';
+      try {
+        localeFromStorage =
+          localStorage.getItem('asaka_locale') ||
+          localStorage.getItem('flutter.asaka_locale') ||
+          '';
+      } catch (_) {
+        localeFromStorage = '';
+      }
+      const locale = (localeFromStorage || navigator.language || 'en').toLowerCase();
+      const isZh = locale.startsWith('zh');
+      const appName = isZh ? '浅颂' : 'Yaru';
+      const appDescription = `${appName} - Online Learning Operating System / 在线学习操作系统`;
+
+      document.title = appName;
+
+      const appleTitleMeta = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+      if (appleTitleMeta) {
+        appleTitleMeta.setAttribute('content', appName);
+      }
+
+      const descriptionMeta = document.querySelector('meta[name="description"]');
+      if (descriptionMeta) {
+        descriptionMeta.setAttribute('content', appDescription);
+      }
+
+      const manifestLink = document.querySelector('link[rel="manifest"]');
+      if (manifestLink) {
+        const manifestPath = manifestLink.getAttribute('href');
+        if (manifestPath) {
+          fetch(manifestPath)
+            .then((response) => response.json())
+            .then((manifest) => {
+              manifest.name = appName;
+              manifest.short_name = appName;
+              manifest.description = appDescription;
+              const blob = new Blob([JSON.stringify(manifest)], {
+                type: 'application/manifest+json',
+              });
+              manifestLink.setAttribute('href', URL.createObjectURL(blob));
+            })
+            .catch(() => {});
+        }
+      }
+    })();
+  </script>
+
+  <!-- flutter_tex scripts for math rendering -->
+  <script src="assets/packages/flutter_tex/core/flutter_tex.js"></script>
+  <script src="assets/packages/flutter_tex/core/mathjax_core.js"></script>
+</head>
+
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+
+</html>
