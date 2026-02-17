@@ -1,0 +1,143 @@
+id: flutter_learning_roadmap
+title: Flutter Learning Roadmap
+version: "1.0"
+groups:
+  - id: dart_basics
+    title: Dart Basics
+    order: 1
+  - id: flutter_widgets
+    title: Flutter Widgets
+    order: 2
+  - id: state_management
+    title: State Management
+    order: 3
+  - id: advanced
+    title: Advanced
+    order: 4
+nodes:
+  - id: dart_syntax
+    title: Dart Syntax and Types
+    group_id: dart_basics
+    order: 1
+    description: Variables, null safety, collections, and basic type system.
+    prerequisites: []
+
+  - id: dart_control_flow
+    title: Control Flow and Functions
+    group_id: dart_basics
+    order: 2
+    description: Conditionals, loops, functions, and parameter patterns.
+    prerequisites:
+      - dart_syntax
+
+  - id: dart_oop
+    title: OOP and Mixins
+    group_id: dart_basics
+    order: 3
+    description: Classes, inheritance, mixins, abstract classes, and interfaces.
+    prerequisites:
+      - dart_control_flow
+
+  - id: dart_async
+    title: Async Programming
+    group_id: dart_basics
+    order: 4
+    description: Future, Stream, async/await, and error handling.
+    prerequisites:
+      - dart_oop
+
+  - id: flutter_setup
+    title: Flutter Project Structure
+    group_id: flutter_widgets
+    order: 1
+    description: Project layout, hot reload, assets, and pubspec basics.
+    prerequisites:
+      - dart_async
+
+  - id: flutter_core_widgets
+    title: Core Widgets
+    group_id: flutter_widgets
+    order: 2
+    description: StatelessWidget, StatefulWidget, and widget tree composition.
+    prerequisites:
+      - flutter_setup
+
+  - id: flutter_layout
+    title: Layout System
+    group_id: flutter_widgets
+    order: 3
+    description: Row, Column, Stack, Flex, constraints, and responsive layout.
+    prerequisites:
+      - flutter_core_widgets
+
+  - id: flutter_navigation_forms
+    title: Navigation and Forms
+    group_id: flutter_widgets
+    order: 4
+    description: Routing, navigation patterns, form validation, and input widgets.
+    prerequisites:
+      - flutter_layout
+
+  - id: state_setstate
+    title: setState and Stateful Lifecycle
+    group_id: state_management
+    order: 1
+    description: Stateful lifecycle and local state updates with setState.
+    prerequisites:
+      - flutter_navigation_forms
+
+  - id: state_provider_basics
+    title: Provider and InheritedWidget
+    group_id: state_management
+    order: 2
+    description: Shared state with InheritedWidget and Provider patterns.
+    prerequisites:
+      - state_setstate
+
+  - id: state_riverpod
+    title: Riverpod Architecture
+    group_id: state_management
+    order: 3
+    description: Providers, async state, dependency graph, and testability.
+    prerequisites:
+      - state_provider_basics
+
+  - id: state_clean_architecture
+    title: Scalable Feature Architecture
+    group_id: state_management
+    order: 4
+    description: Layered architecture, repositories, and state boundaries.
+    prerequisites:
+      - state_riverpod
+
+  - id: advanced_animation
+    title: Animations and Motion
+    group_id: advanced
+    order: 1
+    description: Implicit and explicit animations, controllers, and transitions.
+    prerequisites:
+      - state_clean_architecture
+
+  - id: advanced_networking
+    title: Networking and Serialization
+    group_id: advanced
+    order: 2
+    description: REST integration, Dio, decoding, and resilient network flows.
+    prerequisites:
+      - advanced_animation
+
+  - id: advanced_storage
+    title: Offline Data and Persistence
+    group_id: advanced
+    order: 3
+    description: Local storage, sync strategy, and offline-first UX.
+    prerequisites:
+      - advanced_networking
+
+  - id: advanced_testing
+    title: Testing and Performance
+    group_id: advanced
+    order: 4
+    description: Unit/widget/integration tests, profiling, and release hardening.
+    prerequisites:
+      - advanced_storage
