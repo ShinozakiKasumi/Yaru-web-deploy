@@ -1,4 +1,4 @@
-# Yaru Webapp Deploy Repo
+# Yaru-VerWeb Deploy Repo
 
 This repository stores generated Flutter web output for Yaru.
 
@@ -6,13 +6,14 @@ This repository stores generated Flutter web output for Yaru.
 
 - Source app: `Monorepo/apps/Flutter`
 - Sync script: `Monorepo/scripts/deploy_web_to_pages.py`
-- CI workflow: `.github/workflows/deploy-webapp.yml`
+- CI workflow: `.github/workflows/deploy-yaru-verweb.yml`
 - Publish target: this repository (`main` branch)
 - Runtime: Coolify with Dockerfile mode
 
 ## Coolify settings
 
-- Repository: `asakatea/webapp`
+- Application name: `Yaru-VerWeb`
+- Repository: `asakatea/Yaru-VerWeb`
 - Branch: `main`
 - Build pack: `Dockerfile`
 - Dockerfile location: `/Dockerfile`
@@ -26,3 +27,9 @@ This repository stores generated Flutter web output for Yaru.
 - `GET /pkg/asaka_bridge_bg.wasm` returns `200`
 - Response headers include `Cross-Origin-Opener-Policy: same-origin`
 - Response headers include `Cross-Origin-Embedder-Policy: require-corp`
+
+## Automation note
+
+- The root repo workflow publishes Flutter web artifacts to this repo and then triggers a Coolify deployment.
+- The current default deploy trigger uses the Coolify API URL stored in `WEBAPP_COOLIFY_DEPLOY_URL`.
+- SSH-triggered deployment is also supported, but is disabled by default unless `WEBAPP_VPS_SSH_ENABLED=true`.
