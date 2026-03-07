@@ -23,8 +23,10 @@ This repository stores generated Flutter web output for Yaru.
 ## Required checks after deploy
 
 - `GET /` returns `200`
+- `GET /main.dart.mjs` returns `200` and `Content-Type` includes `text/javascript`
+- `GET /manifest.json` returns `200` and `Content-Type` includes `application/manifest+json`
 - `GET /pkg/asaka_bridge.js` returns `200` and not `text/html`
-- `GET /pkg/asaka_bridge_bg.wasm` returns `200`
+- `GET /pkg/asaka_bridge_bg.wasm` returns `200` and `Content-Type` includes `application/wasm`
 - Response headers include `Cross-Origin-Opener-Policy: same-origin`
 - Response headers include `Cross-Origin-Embedder-Policy: require-corp`
 

@@ -65,12 +65,30 @@
       if (manifestLink) {
         const manifestPath = manifestLink.getAttribute('href');
         if (manifestPath) {
-          fetch(manifestPath)
+          const manifestUrl = new URL(manifestPath, document.baseURI);
+          fetch(manifestUrl)
             .then((response) => response.json())
             .then((manifest) => {
               manifest.name = appName;
               manifest.short_name = appName;
               manifest.description = appDescription;
+              if (typeof manifest.start_url === 'string' && manifest.start_url.length > 0) {
+                manifest.start_url = new URL(manifest.start_url, manifestUrl).toString();
+              }
+              if (typeof manifest.scope === 'string' && manifest.scope.length > 0) {
+                manifest.scope = new URL(manifest.scope, manifestUrl).toString();
+              }
+              if (Array.isArray(manifest.icons)) {
+                manifest.icons = manifest.icons.map((icon) => {
+                  if (!icon || typeof icon.src !== 'string' || icon.src.length === 0) {
+                    return icon;
+                  }
+                  return {
+                    ...icon,
+                    src: new URL(icon.src, manifestUrl).toString(),
+                  };
+                });
+              }
               const blob = new Blob([JSON.stringify(manifest)], {
                 type: 'application/manifest+json',
               });
