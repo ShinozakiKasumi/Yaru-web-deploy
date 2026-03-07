@@ -13,7 +13,7 @@ This repository stores generated Flutter web output for Yaru.
 ## Coolify settings
 
 - Application name: `Yaru-VerWeb`
-- Repository: `asakatea/Yaru-VerWeb`
+- Repository: `ProjectYaru/Yaru-VerWeb`
 - Branch: `main`
 - Build pack: `Dockerfile`
 - Dockerfile location: `/Dockerfile`
