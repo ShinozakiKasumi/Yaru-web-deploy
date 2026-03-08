@@ -3567,7 +3567,7 @@ let wasm_bindgen = (function(exports) {
                 const ret = eval(v0);
                 return ret;
             }, arguments); },
-            __wbg_getRandomValues_5fa7f49f99c8f91b: function() { return handleError(function (arg0) {
+            __wbg_getRandomValues_99fb161670c2e117: function() { return handleError(function (arg0) {
                 globalThis.crypto.getRandomValues(arg0);
             }, arguments); },
             __wbg_getRandomValues_c44a50d8cfdaebeb: function() { return handleError(function (arg0, arg1) {
@@ -3801,12 +3801,12 @@ let wasm_bindgen = (function(exports) {
             },
             __wbindgen_cast_0000000000000001: function(arg0, arg1) {
                 // Cast intrinsic for `Closure(Closure { dtor_idx: 1829, function: Function { arguments: [NamedExternref("MessageEvent")], shim_idx: 1830, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-                const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen_ef739d0bf25542d6___closure__destroy___dyn_core_50ec60b8eae9a0c6___ops__function__FnMut__web_sys_3c3a46784e7aa9d2___features__gen_MessageEvent__MessageEvent____Output_______, wasm_bindgen_ef739d0bf25542d6___convert__closures_____invoke___web_sys_3c3a46784e7aa9d2___features__gen_MessageEvent__MessageEvent______true_);
+                const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen_2aacb533dba8355a___closure__destroy___dyn_core_36ee41f533c36f03___ops__function__FnMut__web_sys_8ca346a22f183e1e___features__gen_MessageEvent__MessageEvent____Output_______, wasm_bindgen_2aacb533dba8355a___convert__closures_____invoke___web_sys_8ca346a22f183e1e___features__gen_MessageEvent__MessageEvent______true_);
                 return ret;
             },
             __wbindgen_cast_0000000000000002: function(arg0, arg1) {
                 // Cast intrinsic for `Closure(Closure { dtor_idx: 974, function: Function { arguments: [NamedExternref("Event")], shim_idx: 999, ret: Unit, inner_ret: Some(Unit) }, mutable: true }) -> Externref`.
-                const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen_ef739d0bf25542d6___closure__destroy___dyn_core_50ec60b8eae9a0c6___ops__function__FnMut__web_sys_3c3a46784e7aa9d2___features__gen_Event__Event____Output_______, wasm_bindgen_ef739d0bf25542d6___convert__closures_____invoke___web_sys_3c3a46784e7aa9d2___features__gen_Event__Event______true_);
+                const ret = makeMutClosure(arg0, arg1, wasm.wasm_bindgen_2aacb533dba8355a___closure__destroy___dyn_core_36ee41f533c36f03___ops__function__FnMut__web_sys_8ca346a22f183e1e___features__gen_Event__Event____Output_______, wasm_bindgen_2aacb533dba8355a___convert__closures_____invoke___web_sys_8ca346a22f183e1e___features__gen_Event__Event______true_);
                 return ret;
             },
             __wbindgen_cast_0000000000000003: function(arg0) {
@@ -3852,12 +3852,12 @@ let wasm_bindgen = (function(exports) {
         };
     }
 
-    function wasm_bindgen_ef739d0bf25542d6___convert__closures_____invoke___web_sys_3c3a46784e7aa9d2___features__gen_MessageEvent__MessageEvent______true_(arg0, arg1, arg2) {
-        wasm.wasm_bindgen_ef739d0bf25542d6___convert__closures_____invoke___web_sys_3c3a46784e7aa9d2___features__gen_MessageEvent__MessageEvent______true_(arg0, arg1, arg2);
+    function wasm_bindgen_2aacb533dba8355a___convert__closures_____invoke___web_sys_8ca346a22f183e1e___features__gen_MessageEvent__MessageEvent______true_(arg0, arg1, arg2) {
+        wasm.wasm_bindgen_2aacb533dba8355a___convert__closures_____invoke___web_sys_8ca346a22f183e1e___features__gen_MessageEvent__MessageEvent______true_(arg0, arg1, arg2);
     }
 
-    function wasm_bindgen_ef739d0bf25542d6___convert__closures_____invoke___web_sys_3c3a46784e7aa9d2___features__gen_Event__Event______true_(arg0, arg1, arg2) {
-        wasm.wasm_bindgen_ef739d0bf25542d6___convert__closures_____invoke___web_sys_3c3a46784e7aa9d2___features__gen_Event__Event______true_(arg0, arg1, arg2);
+    function wasm_bindgen_2aacb533dba8355a___convert__closures_____invoke___web_sys_8ca346a22f183e1e___features__gen_Event__Event______true_(arg0, arg1, arg2) {
+        wasm.wasm_bindgen_2aacb533dba8355a___convert__closures_____invoke___web_sys_8ca346a22f183e1e___features__gen_Event__Event______true_(arg0, arg1, arg2);
     }
 
     const WorkerPoolFinalization = (typeof FinalizationRegistry === 'undefined')
