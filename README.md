@@ -8,21 +8,23 @@ This repository stores generated Flutter web output for Yaru.
 - Sync script: `Monorepo/scripts/deploy_web_to_pages.py`
 - CI workflow: `.github/workflows/deploy-yaru-verweb.yml`
 - Publish target: this repository (`main` branch)
-- Runtime: Coolify with Dockerfile mode
+- Runtime: Vercel static hosting
 
-## Coolify settings
+## Vercel settings
 
-- Application name: `Yaru-VerWeb`
-- Repository: `ProjectYaru/Yaru-VerWeb`
-- Branch: `main`
-- Build pack: `Dockerfile`
-- Dockerfile location: `/Dockerfile`
-- Exposed port: `80`
+- Project repository: `ProjectYaru/Yaru-VerWeb`
+- Production branch: `main`
+- Framework preset: `Other`
+- Root directory: `.`
+- Build command: empty
+- Output directory: empty
+- Install command: empty
 - Custom domain: `web.asaka.moe`
 
 ## Required checks after deploy
 
 - `GET /` returns `200`
+- `GET /version.json` returns the current release version
 - `GET /main.dart.mjs` returns `200` and `Content-Type` includes `text/javascript`
 - `GET /manifest.json` returns `200` and `Content-Type` includes `application/manifest+json`
 - `GET /pkg/asaka_bridge.js` returns `200` and not `text/html`
@@ -32,6 +34,6 @@ This repository stores generated Flutter web output for Yaru.
 
 ## Automation note
 
-- The root repo workflow publishes Flutter web artifacts to this repo and then triggers a Coolify deployment.
-- The current default deploy trigger uses the Coolify API URL stored in `WEBAPP_COOLIFY_DEPLOY_URL`.
-- SSH-triggered deployment is also supported, but is disabled by default unless `WEBAPP_VPS_SSH_ENABLED=true`.
+- The root repo workflow publishes Flutter web artifacts to this repo.
+- Vercel should watch `ProjectYaru/Yaru-VerWeb` directly and deploy each push to `main`.
+- No Coolify or VPS deploy trigger should remain enabled for this repository.
