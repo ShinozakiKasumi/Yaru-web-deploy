@@ -1,4 +1,4 @@
-# Yaru-VerWeb Deploy Repo
+# Yaru Web Deploy Repo
 
 This repository stores generated Flutter web output for Yaru.
 
@@ -12,7 +12,7 @@ This repository stores generated Flutter web output for Yaru.
 
 ## Vercel settings
 
-- Project repository: `ProjectYaru/Yaru-VerWeb`
+- Project repository: `ProjectYaru/Yaru-web-deploy`
 - Production branch: `main`
 - Framework preset: `Other`
 - Root directory: `.`
@@ -35,5 +35,5 @@ This repository stores generated Flutter web output for Yaru.
 ## Automation note
 
 - The root repo workflow publishes Flutter web artifacts to this repo.
-- Vercel should watch `ProjectYaru/Yaru-VerWeb` directly and deploy each push to `main`.
+- Vercel should watch `ProjectYaru/Yaru-web-deploy` directly and deploy each push to `main`.
 - No Coolify or VPS deploy trigger should remain enabled for this repository.
