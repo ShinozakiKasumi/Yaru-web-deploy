@@ -1,0 +1,28 @@
+[submodule "Monorepo/sites/landing"]
+	path = Monorepo/sites/landing
+	url = https://github.com/ProjectYaru/Yaru-landing.git
+	branch = main
+[submodule "Monorepo/sites/personal"]
+	path = Monorepo/sites/personal
+	url = https://github.com/ProjectYaru/Yaru-personal-site.git
+	branch = main
+[submodule "Monorepo/distribution/release"]
+	path = Monorepo/distribution/release
+	url = https://github.com/ProjectYaru/Yaru-release.git
+	branch = main
+[submodule "Monorepo/distribution/Yaru-VerWeb"]
+	path = Monorepo/distribution/Yaru-VerWeb
+	url = https://github.com/ProjectYaru/Yaru-web-deploy.git
+	branch = main
+[submodule "Monorepo/apps/backend"]
+	path = Monorepo/apps/backend
+	url = https://github.com/ProjectYaru/Yaru-backend.git
+	branch = main
+[submodule "Monorepo/apps/extension"]
+	path = Monorepo/apps/extension
+	url = https://github.com/ProjectYaru/Yaru-extension.git
+	branch = main
+[submodule "Monorepo/apps/Flutter"]
+	path = Monorepo/apps/Flutter
+	url = https://github.com/ProjectYaru/Yaru-flutter.git
+	branch = main

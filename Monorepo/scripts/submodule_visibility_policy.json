@@ -1,0 +1,40 @@
+{
+  "required_branch": "main",
+  "submodules": [
+    {
+      "path": "Monorepo/apps/Flutter",
+      "url": "https://github.com/ProjectYaru/Yaru-flutter.git",
+      "visibility": "private"
+    },
+    {
+      "path": "Monorepo/apps/backend",
+      "url": "https://github.com/ProjectYaru/Yaru-backend.git",
+      "visibility": "private"
+    },
+    {
+      "path": "Monorepo/apps/extension",
+      "url": "https://github.com/ProjectYaru/Yaru-extension.git",
+      "visibility": "private"
+    },
+    {
+      "path": "Monorepo/sites/landing",
+      "url": "https://github.com/ProjectYaru/Yaru-landing.git",
+      "visibility": "private"
+    },
+    {
+      "path": "Monorepo/sites/personal",
+      "url": "https://github.com/ProjectYaru/Yaru-personal-site.git",
+      "visibility": "private"
+    },
+    {
+      "path": "Monorepo/distribution/release",
+      "url": "https://github.com/ProjectYaru/Yaru-release.git",
+      "visibility": "public"
+    },
+    {
+      "path": "Monorepo/distribution/Yaru-VerWeb",
+      "url": "https://github.com/ProjectYaru/Yaru-web-deploy.git",
+      "visibility": "private"
+    }
+  ]
+}

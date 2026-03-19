@@ -1,0 +1,395 @@
+name: Publish Update Channel
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Update channel
+        required: true
+        default: stable
+        type: choice
+        options:
+          - stable
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-update-channel-${{ github.event.inputs.channel || 'stable' }}
+  cancel-in-progress: false
+
+env:
+  UPDATE_GITHUB_REPO: ${{ vars.UPDATE_GITHUB_REPO }}
+
+jobs:
+  build_and_package:
+    name: build-${{ matrix.platform }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        include:
+          - platform: windows
+            os: windows-latest
+          - platform: macos
+            os: macos-latest
+          - platform: linux
+            os: ubuntu-latest
+          - platform: android
+            os: ubuntu-latest
+
+    env:
+      MIN_SUPPORTED_VERSION: ${{ vars.MIN_SUPPORTED_VERSION }}
+      UPDATE_GITHUB_REPO: ${{ vars.UPDATE_GITHUB_REPO }}
+      MSIX_PUBLISHER: ${{ secrets.MSIX_PUBLISHER }}
+      MSIX_CERTIFICATE_PASSWORD: ${{ secrets.MSIX_CERTIFICATE_PASSWORD }}
+      MSIX_CERT_PFX_BASE64: ${{ secrets.MSIX_CERT_PFX_BASE64 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_READ_TOKEN || github.token }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyyaml
+
+      - name: Setup Java (Android)
+        if: matrix.platform == 'android'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Rust (Android)
+        if: matrix.platform == 'android'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: aarch64-linux-android,armv7-linux-androideabi,x86_64-linux-android
+
+      - name: Cache Rust (Android)
+        if: matrix.platform == 'android'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            Monorepo/apps/Flutter/rust/target/
+          key: rust-android-${{ hashFiles('Monorepo/apps/Flutter/rust/Cargo.lock') }}
+          restore-keys: rust-android-
+
+      - name: Install cargo-ndk (Android)
+        if: matrix.platform == 'android'
+        run: |
+          if ! command -v cargo-ndk >/dev/null 2>&1; then
+            cargo install cargo-ndk --locked
+          fi
+
+      - name: Install Linux build dependencies
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev curl
+
+      - name: Install appimagetool wrapper
+        if: matrix.platform == 'linux'
+        run: |
+          mkdir -p /tmp/appimagekit
+          curl -L --fail https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -o /tmp/appimagekit/appimagetool-x86_64.AppImage
+          chmod +x /tmp/appimagekit/appimagetool-x86_64.AppImage
+          cat > /tmp/appimagetool <<'EOF'
+          #!/usr/bin/env bash
+          exec /tmp/appimagekit/appimagetool-x86_64.AppImage --appimage-extract-and-run "$@"
+          EOF
+          chmod +x /tmp/appimagetool
+
+      - name: Enable Linux desktop
+        if: matrix.platform == 'linux'
+        run: flutter config --enable-linux-desktop
+
+      - name: Enable macOS desktop
+        if: matrix.platform == 'macos'
+        run: flutter config --enable-macos-desktop
+
+      - name: Enable Windows desktop
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: flutter config --enable-windows-desktop
+
+      - name: Prepare MSIX certificate
+        if: matrix.platform == 'windows' && env.MSIX_CERT_PFX_BASE64 != ''
+        shell: pwsh
+        run: |
+          $certPath = Join-Path $env:RUNNER_TEMP "msix_cert.pfx"
+          [IO.File]::WriteAllBytes($certPath, [Convert]::FromBase64String("${{ env.MSIX_CERT_PFX_BASE64 }}"))
+          "MSIX_CERTIFICATE_PATH=$certPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Flutter pub get
+        run: flutter pub get
+        working-directory: Monorepo/apps/Flutter
+
+      - name: Generate i18n translations
+        run: flutter pub run slang
+        working-directory: Monorepo/apps/Flutter
+
+      - name: Generate code
+        run: flutter pub run build_runner build --delete-conflicting-outputs
+        working-directory: Monorepo/apps/Flutter
+
+      - name: Build and package (Linux/macOS/Android)
+        if: matrix.platform != 'windows'
+        run: |
+          if [ "${{ matrix.platform }}" = "linux" ]; then
+            export PATH="/tmp:$PATH"
+          fi
+          python3 scripts/deploy.py --platform "${{ matrix.platform }}" --channel "${{ inputs.channel }}" --build-only
+        working-directory: Monorepo
+
+      - name: Build and package (Windows)
+        if: matrix.platform == 'windows'
+        shell: pwsh
+        run: |
+          python scripts/deploy.py --platform windows --channel "${{ inputs.channel }}" --build-only
+        working-directory: Monorepo
+
+      - name: Upload dist artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ matrix.platform }}
+          path: Monorepo/dist
+          if-no-files-found: error
+
+  publish_github_release:
+    name: publish-github-release
+    runs-on: ubuntu-latest
+    needs: build_and_package
+    env:
+      GH_TOKEN: ${{ secrets.UPDATE_GITHUB_TOKEN }}
+      GITHUB_TOKEN_FALLBACK: ${{ secrets.GITHUB_TOKEN }}
+      UPDATE_GITHUB_REPO: ${{ vars.UPDATE_GITHUB_REPO }}
+      R2_S3_ENDPOINT: https://25778cbd66f3370947041591f896dc68.r2.cloudflarestorage.com
+      R2_BUCKET: download
+      R2_PREFIX: stable
+      R2_REGION: auto
+      R2_PUBLIC_BASE_URL: https://bucket.asaka.moe/stable
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_READ_TOKEN || github.token }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install AWS CLI
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install awscli
+
+      - name: Resolve release target
+        id: release_target
+        run: |
+          repo="${UPDATE_GITHUB_REPO:-ProjectYaru/Yaru-release}"
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+
+          if [ -n "${GH_TOKEN:-}" ]; then
+            echo "Using UPDATE_GITHUB_TOKEN for $repo"
+            exit 0
+          fi
+
+          if [ "$repo" = "${GITHUB_REPOSITORY}" ]; then
+            echo "GH_TOKEN=$GITHUB_TOKEN_FALLBACK" >> "$GITHUB_ENV"
+            echo "Using default GITHUB_TOKEN for same-repo release publish."
+          else
+            echo "Missing secrets.UPDATE_GITHUB_TOKEN for cross-repo publish to $repo." >&2
+            exit 1
+          fi
+
+      - name: Resolve app version
+        id: app_version
+        run: |
+          version_line="$(grep -m1 '^version:' Monorepo/apps/Flutter/pubspec.yaml | awk '{print $2}')"
+          if [ -z "$version_line" ]; then
+            echo "Failed to parse version from pubspec.yaml" >&2
+            exit 1
+          fi
+          app_version="${version_line%%+*}"
+          echo "version=$app_version" >> "$GITHUB_OUTPUT"
+          echo "tag=$app_version" >> "$GITHUB_OUTPUT"
+
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: dist-*
+          path: release-artifacts
+          merge-multiple: false
+
+      - name: Build release asset manifests
+        env:
+          APP_VERSION: ${{ steps.app_version.outputs.version }}
+          GH_REPO: ${{ steps.release_target.outputs.repo }}
+          MIN_SUPPORTED_VERSION: ${{ vars.MIN_SUPPORTED_VERSION }}
+        run: |
+          min_supported="${MIN_SUPPORTED_VERSION:-0.0.0}"
+          python scripts/build_release_manifests.py \
+            --artifacts-root release-artifacts \
+            --output-dir release-assets \
+            --version "$APP_VERSION" \
+            --github-repo "$GH_REPO" \
+            --min-supported-version "$min_supported" \
+            --server-download-base "$R2_PUBLIC_BASE_URL"
+
+      - name: Create or update GitHub Release
+        env:
+          TAG: ${{ steps.app_version.outputs.tag }}
+          VERSION: ${{ steps.app_version.outputs.version }}
+          GH_REPO: ${{ steps.release_target.outputs.repo }}
+        run: |
+          title="Yaru ${VERSION}"
+          notes_file="$(mktemp)"
+          cat > "$notes_file" <<EOF
+          Automated multi-platform build for Yaru ${VERSION}.
+
+          Update channel manifest:
+          - https://update.asaka.moe/latest.json
+          EOF
+
+          if gh release view "$TAG" --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release edit "$TAG" --repo "$GH_REPO" --title "$title" --notes-file "$notes_file"
+          else
+            gh release create "$TAG" --repo "$GH_REPO" --target "${{ github.sha }}" --title "$title" --notes-file "$notes_file"
+          fi
+
+      - name: Upload assets to GitHub Release
+        env:
+          TAG: ${{ steps.app_version.outputs.tag }}
+          GH_REPO: ${{ steps.release_target.outputs.repo }}
+        run: |
+          gh release upload \
+            "$TAG" \
+            release-assets/common/* \
+            release-assets/github/latest.json \
+            release-assets/github/history-*.json \
+            --repo "$GH_REPO" \
+            --clobber
+
+      - name: Verify latest manifest from GitHub Release
+        env:
+          GH_REPO: ${{ steps.release_target.outputs.repo }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          repo = os.environ["GH_REPO"]
+          url = f"https://github.com/{repo}/releases/latest/download/latest.json"
+          with urllib.request.urlopen(url, timeout=20) as response:
+              data = json.loads(response.read().decode("utf-8"))
+
+          platforms = set((data.get("platforms") or {}).keys())
+          expected = {"windows", "macos", "linux", "android"}
+          missing = expected - platforms
+          if missing:
+              raise SystemExit(f"latest.json missing platforms: {sorted(missing)}")
+
+          print("latest.json platforms:", sorted(platforms))
+          print("version:", data.get("version"))
+          PY
+
+      - name: Sync latest Server channel assets to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_DOWNLOAD_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_DOWNLOAD_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ env.R2_REGION }}
+          AWS_DEFAULT_REGION: ${{ env.R2_REGION }}
+        run: |
+          aws s3 rm "s3://${R2_BUCKET}/${R2_PREFIX}/" \
+            --recursive \
+            --endpoint-url "$R2_S3_ENDPOINT"
+
+          aws s3 cp "release-assets/common/" "s3://${R2_BUCKET}/${R2_PREFIX}/" \
+            --recursive \
+            --endpoint-url "$R2_S3_ENDPOINT"
+
+          aws s3 cp "release-assets/server/latest.json" "s3://${R2_BUCKET}/${R2_PREFIX}/latest.json" \
+            --endpoint-url "$R2_S3_ENDPOINT"
+
+          aws s3 cp "release-assets/server/history-${{ steps.app_version.outputs.version }}.json" \
+            "s3://${R2_BUCKET}/${R2_PREFIX}/history-${{ steps.app_version.outputs.version }}.json" \
+            --endpoint-url "$R2_S3_ENDPOINT"
+
+      - name: Verify latest manifest from R2
+        run: |
+          python - <<'PY'
+          import json
+          import urllib.request
+
+          manifest_url = "https://bucket.asaka.moe/stable/latest.json"
+          with urllib.request.urlopen(manifest_url, timeout=20) as response:
+              data = json.loads(response.read().decode("utf-8"))
+
+          platforms = set((data.get("platforms") or {}).keys())
+          expected = {"windows", "macos", "linux", "android"}
+          missing = expected - platforms
+          if missing:
+              raise SystemExit(f"R2 latest.json missing platforms: {sorted(missing)}")
+
+          urls = []
+          for assets in (data.get("platforms") or {}).values():
+              if isinstance(assets, dict):
+                  for key, value in assets.items():
+                      if key.endswith("_url") and isinstance(value, str):
+                          urls.append(value)
+
+          if not urls:
+              raise SystemExit("R2 latest.json did not contain any download URLs")
+
+          request = urllib.request.Request(urls[0], method="HEAD")
+          with urllib.request.urlopen(request, timeout=20) as response:
+              if response.status >= 400:
+                  raise SystemExit(f"Artifact check failed with status {response.status}")
+
+          print("R2 latest.json platforms:", sorted(platforms))
+          print("Sample artifact:", urls[0])
+          PY
+
+      - name: Ping download landing page
+        run: |
+          echo "Warming Yaru download landing page with a GET request..."
+          curl --fail --show-error --silent --location \
+            --output /dev/null \
+            --write-out '\nHTTP %{http_code}\n' \
+            "https://yaru.asaka.moe/download"
+          echo "Download landing page ping completed."
+
+      - name: Trigger Landing Site Rebuild (Webhook)
+        if: env.LANDING_WEBHOOK_URL != ''
+        env:
+          LANDING_WEBHOOK_URL: ${{ secrets.CLOUDFLARE_LANDING_WEBHOOK }}
+        run: |
+          echo "Triggering Landing page rebuild..."
+          curl -X POST -s "$LANDING_WEBHOOK_URL"
+          echo "Landing page rebuild ping completed."

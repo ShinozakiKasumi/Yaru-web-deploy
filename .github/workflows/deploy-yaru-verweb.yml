@@ -1,0 +1,111 @@
+name: Deploy Yaru-VerWeb
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - Monorepo/apps/Flutter
+      - Monorepo/apps/Flutter/**
+      - Monorepo/distribution/Yaru-VerWeb
+      - Monorepo/scripts/deploy_web_to_pages.py
+      - .github/workflows/deploy-yaru-verweb.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-yaru-verweb-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy-yaru-verweb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      PUB_HOSTED_URL: https://pub.dev
+      FLUTTER_STORAGE_BASE_URL: https://storage.googleapis.com
+      WEBAPP_GIT_PUSH_TOKEN: ${{ secrets.WEBAPP_REPO_PUSH_TOKEN }}
+      WEBAPP_PUSH_REMOTE_URL: ${{ vars.WEBAPP_PUSH_REMOTE_URL || 'https://github.com/ProjectYaru/Yaru-web-deploy.git' }}
+      WEBAPP_TARGET_BRANCH: ${{ vars.WEBAPP_TARGET_BRANCH || 'main' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          token: ${{ secrets.SUBMODULES_READ_TOKEN || github.token }}
+
+      - name: Require Yaru-VerWeb push token
+        if: env.WEBAPP_GIT_PUSH_TOKEN == ''
+        run: |
+          echo "WEBAPP_REPO_PUSH_TOKEN is required to push deploy output." >&2
+          exit 1
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+
+      - name: Install nightly rust-src for wasm-pack
+        run: |
+          rustup toolchain install nightly --component rust-src --target wasm32-unknown-unknown
+
+      - name: Install clang
+        run: |
+          if ! command -v clang >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y clang
+          fi
+
+      - name: Install wasm-pack
+        run: |
+          if ! command -v wasm-pack >/dev/null 2>&1; then
+            cargo install wasm-pack --locked
+          fi
+
+      - name: Cache Rust
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            Monorepo/apps/Flutter/rust/target/
+          key: yaru-verweb-rust-${{ runner.os }}-${{ hashFiles('Monorepo/apps/Flutter/rust/**/Cargo.toml') }}
+          restore-keys: |
+            yaru-verweb-rust-${{ runner.os }}-
+
+      - name: Install cargo-expand
+        run: |
+          if ! command -v cargo-expand >/dev/null 2>&1; then
+            cargo install cargo-expand --locked
+          fi
+
+      - name: Install flutter_rust_bridge_codegen
+        run: |
+          installed="$(flutter_rust_bridge_codegen --version 2>/dev/null || true)"
+          if ! printf '%s' "$installed" | grep -q '2.11.1'; then
+            cargo install flutter_rust_bridge_codegen --version 2.11.1 --locked
+          fi
+
+      - name: Configure Git identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Build Yaru-VerWeb and push deploy repo
+        run: python3 Monorepo/scripts/deploy_web_to_pages.py
+
+
+
