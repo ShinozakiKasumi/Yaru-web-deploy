@@ -91,6 +91,41 @@ The script will:
 - switch `.env` DSNs to the new database
 - restart services and run stack + OAuth smoke checks
 
+## Database Migration (VPS PostgreSQL -> Neon)
+
+When moving the PostgreSQL dataset from the VPS stack into Neon, use a **direct**
+Neon connection string whenever possible.
+
+Run a dry-run preflight first:
+
+```bash
+cd Monorepo/docker/vps
+TARGET_DATABASE_URL="postgresql://..." \
+./scripts/migrate_postgres_to_neon.sh --dry-run
+```
+
+Run the actual stream restore:
+
+```bash
+cd Monorepo/docker/vps
+TARGET_DATABASE_URL="postgresql://..." \
+./scripts/migrate_postgres_to_neon.sh --reset-public-schema
+```
+
+Notes:
+
+- the script reads `POSTGRES_USER` / `POSTGRES_DB` from `.env` by default
+- the source PostgreSQL server is accessed through the running `vps-postgres-1`
+  container
+- `--target-size-limit-bytes` is available as a hard guardrail for small Neon plans
+- `--schema-only` and `--data-only` are available for staged restores
+
+Neon sizing reminder:
+
+- Neon Free currently includes **0.5 GB of storage per project**, so larger
+  production datasets must be imported into a paid project or reduced before cutover
+- if your target is empty, `--reset-public-schema` keeps retries deterministic
+
 ## Core Runtime Notes
 
 - API listens on `http://yaru-core:8787`.
