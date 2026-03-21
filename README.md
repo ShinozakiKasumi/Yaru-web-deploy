@@ -1,12 +1,12 @@
 # Yaru Web Deploy Repo
 
-This repository stores generated Flutter web output for Yaru.
+This repository stores only generated Flutter web output for Yaru.
 
 ## Update flow
 
-- Source app: `Monorepo/apps/Flutter`
-- Sync script: `Monorepo/scripts/deploy_web_to_pages.py`
-- CI workflow: `.github/workflows/deploy-yaru-verweb.yml`
+- Source app: `ProjectYaru/Yaru`
+- Sync script: `ProjectYaru/Yaru-release-automation/scripts/deploy_web_to_pages.py`
+- CI workflow: `ProjectYaru/Yaru-release-automation/.github/workflows/deploy-yaru-verweb.yml`
 - Publish target: this repository (`main` branch)
 - Runtime: Vercel static hosting
 
@@ -34,6 +34,6 @@ This repository stores generated Flutter web output for Yaru.
 
 ## Automation note
 
-- The root repo workflow publishes Flutter web artifacts to this repo.
+- `ProjectYaru/Yaru-release-automation` publishes Flutter web artifacts to this repo.
 - Vercel should watch `ProjectYaru/Yaru-web-deploy` directly and deploy each push to `main`.
-- No Coolify or VPS deploy trigger should remain enabled for this repository.
+- No release, landing, or build scripts should live in this repository.
