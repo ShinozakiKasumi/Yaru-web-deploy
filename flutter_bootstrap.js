@@ -35,8 +35,58 @@ if (!window._flutter) {
 }
 _flutter.buildConfig = {"engineRevision":"052f31d115eceda8cbff1b3481fcde4330c4ae12","builds":[{"compileTarget":"dart2wasm","renderer":"skwasm","mainWasmPath":"main.dart.wasm","jsSupportRuntimePath":"main.dart.mjs"},{"compileTarget":"dart2js","renderer":"canvaskit","mainJsPath":"main.dart.js"}]};
 
-_flutter.loader.load({
-  serviceWorkerSettings: {
-    serviceWorkerVersion: "3827117520" /* Flutter's service worker is deprecated and will be removed in a future Flutter release. */
+
+(function () {
+  const searchParams = new URLSearchParams(window.location.search);
+  const overrideRenderer = searchParams.get('renderer');
+  const userAgent = navigator.userAgent || '';
+  const platform = navigator.platform || '';
+  const maxTouchPoints = navigator.maxTouchPoints || 0;
+
+  const isIOS =
+    /iPad|iPhone|iPod/.test(userAgent) ||
+    (platform === 'MacIntel' && maxTouchPoints > 1);
+  const isFirefox = /Firefox\//.test(userAgent);
+  const isSafari =
+    /Safari\//.test(userAgent) &&
+    !/Chrome\/|Chromium\/|CriOS\/|Edg\/|OPR\/|Android/.test(userAgent);
+  const isChromium =
+    /Chrome\/|Chromium\/|Edg\/|OPR\/|Brave\//.test(userAgent) && !isIOS;
+
+  let renderer = null;
+  let strategy = 'auto';
+
+  if (overrideRenderer === 'skwasm' || overrideRenderer === 'canvaskit') {
+    renderer = overrideRenderer;
+    strategy = 'query-override';
+  } else if (isIOS || isFirefox || isSafari) {
+    renderer = 'canvaskit';
+    strategy = 'compatibility-fallback';
+  } else if (isChromium && window.crossOriginIsolated) {
+    renderer = 'skwasm';
+    strategy = /Android/.test(userAgent)
+      ? 'android-chromium-skwasm'
+      : 'chromium-skwasm';
+  } else {
+    renderer = 'canvaskit';
+    strategy = 'non-isolated-fallback';
   }
-});
+
+  const config = { renderer };
+  window.__yaruRendererConfig = {
+    renderer,
+    strategy,
+    crossOriginIsolated: window.crossOriginIsolated === true,
+    overrideRenderer,
+    userAgent,
+  };
+
+  console.info('[Yaru Web] Flutter renderer config', window.__yaruRendererConfig);
+
+  _flutter.loader.load({
+    config,
+    serviceWorkerSettings: {
+      serviceWorkerVersion: "481098141" /* Flutter's service worker is deprecated and will be removed in a future Flutter release. */,
+    },
+  });
+})();
