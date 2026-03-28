@@ -38,55 +38,35 @@ _flutter.buildConfig = {"engineRevision":"052f31d115eceda8cbff1b3481fcde4330c4ae
 
 (function () {
   const searchParams = new URLSearchParams(window.location.search);
-  const overrideRenderer = searchParams.get('renderer');
-  const userAgent = navigator.userAgent || '';
-  const platform = navigator.platform || '';
-  const maxTouchPoints = navigator.maxTouchPoints || 0;
+  const renderer = searchParams.get('renderer');
+  const hasRendererOverride =
+    renderer === 'skwasm' || renderer === 'canvaskit';
+  const builds = Array.isArray(_flutter?.buildConfig?.builds)
+    ? _flutter.buildConfig.builds
+    : [];
+  const hasWasmBuild = builds.some(
+    (build) => build && build.compileTarget === 'dart2wasm',
+  );
 
-  const isIOS =
-    /iPad|iPhone|iPod/.test(userAgent) ||
-    (platform === 'MacIntel' && maxTouchPoints > 1);
-  const isFirefox = /Firefox\//.test(userAgent);
-  const isSafari =
-    /Safari\//.test(userAgent) &&
-    !/Chrome\/|Chromium\/|CriOS\/|Edg\/|OPR\/|Android/.test(userAgent);
-  const isChromium =
-    /Chrome\/|Chromium\/|Edg\/|OPR\/|Brave\//.test(userAgent) && !isIOS;
-
-  let renderer = null;
-  let strategy = 'auto';
-
-  if (overrideRenderer === 'skwasm' || overrideRenderer === 'canvaskit') {
-    renderer = overrideRenderer;
-    strategy = 'query-override';
-  } else if (isIOS || isFirefox || isSafari) {
-    renderer = 'canvaskit';
-    strategy = 'compatibility-fallback';
-  } else if (isChromium && window.crossOriginIsolated) {
-    renderer = 'skwasm';
-    strategy = /Android/.test(userAgent)
-      ? 'android-chromium-skwasm'
-      : 'chromium-skwasm';
-  } else {
-    renderer = 'canvaskit';
-    strategy = 'non-isolated-fallback';
+  try {
+    window.sessionStorage.setItem(
+      'yaru.web.hasWasmBuild',
+      hasWasmBuild ? '1' : '0',
+    );
+    window.sessionStorage.setItem(
+      'yaru.web.rendererOverride',
+      hasRendererOverride ? renderer : '',
+    );
+  } catch (_) {
+    // Some browsers block storage in private or embedded contexts.
   }
 
-  const config = { renderer };
-  window.__yaruRendererConfig = {
-    renderer,
-    strategy,
-    crossOriginIsolated: window.crossOriginIsolated === true,
-    overrideRenderer,
-    userAgent,
-  };
-
-  console.info('[Yaru Web] Flutter renderer config', window.__yaruRendererConfig);
+  const config = hasRendererOverride ? { renderer } : {};
 
   _flutter.loader.load({
     config,
     serviceWorkerSettings: {
-      serviceWorkerVersion: "1933737420" /* Flutter's service worker is deprecated and will be removed in a future Flutter release. */,
+      serviceWorkerVersion: "2552768559" /* Flutter's service worker is deprecated and will be removed in a future Flutter release. */,
     },
   });
 })();
