@@ -37,10 +37,113 @@ _flutter.buildConfig = {"engineRevision":"052f31d115eceda8cbff1b3481fcde4330c4ae
 
 
 (function () {
+  function assetUrl(path) {
+    return new URL(path, document.baseURI).toString();
+  }
+
+  function loadStyleOnce(href, key) {
+    const existing = document.querySelector(`link[data-yaru-key="${key}"]`);
+    if (existing) {
+      return Promise.resolve(existing);
+    }
+
+    return new Promise((resolve, reject) => {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = href;
+      link.dataset.yaruKey = key;
+      link.onload = () => resolve(link);
+      link.onerror = () =>
+        reject(new Error(`Failed to load stylesheet: ${href}`));
+      document.head.appendChild(link);
+    });
+  }
+
+  function loadScriptOnce(src, key) {
+    const existing = document.querySelector(`script[data-yaru-key="${key}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === 'true') {
+        return Promise.resolve(existing);
+      }
+      return new Promise((resolve, reject) => {
+        existing.addEventListener('load', () => resolve(existing), { once: true });
+        existing.addEventListener(
+          'error',
+          () => reject(new Error(`Failed to load script: ${src}`)),
+          { once: true },
+        );
+      });
+    }
+
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.dataset.yaruKey = key;
+      script.onload = () => {
+        script.dataset.loaded = 'true';
+        resolve(script);
+      };
+      script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+      document.head.appendChild(script);
+    });
+  }
+
+  let cropperAssetsPromise;
+  let flutterTexAssetsPromise;
+
+  window.loadCropperAssets = function loadCropperAssets() {
+    if (cropperAssetsPromise) {
+      return cropperAssetsPromise;
+    }
+
+    cropperAssetsPromise = Promise.all([
+      loadStyleOnce(assetUrl('vendor/cropper/cropper.css'), 'cropper-css'),
+      loadScriptOnce(assetUrl('vendor/cropper/cropper.min.js'), 'cropper-js'),
+    ]).catch((error) => {
+      cropperAssetsPromise = undefined;
+      throw error;
+    });
+
+    return cropperAssetsPromise;
+  };
+
+  window.loadFlutterTexAssets = function loadFlutterTexAssets() {
+    if (flutterTexAssetsPromise) {
+      return flutterTexAssetsPromise;
+    }
+
+    flutterTexAssetsPromise = loadScriptOnce(
+      assetUrl('assets/packages/flutter_tex/core/flutter_tex.js'),
+      'flutter-tex-js',
+    )
+      .then(() =>
+        loadScriptOnce(
+          assetUrl('assets/packages/flutter_tex/core/mathjax_core.js'),
+          'flutter-tex-mathjax',
+        ),
+      )
+      .catch((error) => {
+        flutterTexAssetsPromise = undefined;
+        throw error;
+      });
+
+    return flutterTexAssetsPromise;
+  };
+
   const searchParams = new URLSearchParams(window.location.search);
   const renderer = searchParams.get('renderer');
   const hasRendererOverride =
     renderer === 'skwasm' || renderer === 'canvaskit';
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isMobileBrowser =
+    userAgent.includes('mobile') ||
+    userAgent.includes('android') ||
+    userAgent.includes('iphone') ||
+    userAgent.includes('ipod') ||
+    (userAgent.includes('ipad') && navigator.maxTouchPoints > 0);
+  const isCompactViewport = Math.min(window.innerWidth || 0, window.innerHeight || 0) < 600;
+  const preferMobileWebProfile = isMobileBrowser && isCompactViewport;
   const builds = Array.isArray(_flutter?.buildConfig?.builds)
     ? _flutter.buildConfig.builds
     : [];
@@ -57,16 +160,25 @@ _flutter.buildConfig = {"engineRevision":"052f31d115eceda8cbff1b3481fcde4330c4ae
       'yaru.web.rendererOverride',
       hasRendererOverride ? renderer : '',
     );
+    window.sessionStorage.setItem(
+      'yaru.web.mobileProfile',
+      preferMobileWebProfile ? '1' : '0',
+    );
   } catch (_) {
     // Some browsers block storage in private or embedded contexts.
   }
 
-  const config = hasRendererOverride ? { renderer } : {};
+  const effectiveRenderer = hasRendererOverride
+    ? renderer
+    : preferMobileWebProfile && hasWasmBuild
+      ? 'skwasm'
+      : null;
+  const config = effectiveRenderer ? { renderer: effectiveRenderer } : {};
 
   _flutter.loader.load({
     config,
     serviceWorkerSettings: {
-      serviceWorkerVersion: "600308411" /* Flutter's service worker is deprecated and will be removed in a future Flutter release. */,
+      serviceWorkerVersion: "3081914948" /* Flutter's service worker is deprecated and will be removed in a future Flutter release. */,
     },
   });
 })();
